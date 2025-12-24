@@ -1,5 +1,5 @@
 # Your Project's Title...
-Your project's description...
+AEM Forms test project
 
 ## Environments
 - Preview: https://main--aem-boilerplate-forms--adobe-rnd.aem.page/
