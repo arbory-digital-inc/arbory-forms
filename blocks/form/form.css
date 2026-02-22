@@ -1,13 +1,13 @@
 :root {
     --background-color-primary: #fff;
-    --label-color: #666;
-    --border-color: #818a91;
+    --label-color: #000;
+    --border-color: #000;
     --form-error-color: #ff5f3f;
-    --button-primary-color: #406e0c;
+    --button-primary-color: #0766d1;
     --button-secondary-color: #666;
-    --button-primary-hover-color: #406e0c
+    --button-primary-hover-color:#0766d1;
     --form-font-size-m: 22px;
-    --form-font-size-s: 18px;
+    --form-font-size-s: 16px;
     --form-font-size-xs: 16px;
     --form-background-color: var(--background-color-primary);
     --form-padding: 0 10px;
@@ -27,7 +27,7 @@
     --form-paragraph-font-size: var(--form-font-size-s);
     --form-label-color: var(--label-color);
     --form-label-font-size: var(--form-font-size-s);
-    --form-label-font-weight: 400;
+    --form-label-font-weight: 600;
     --form-title-font-weight: 600;
     --form-fieldset-border: 0;
     --form-fieldset-marign: 0;
@@ -93,10 +93,6 @@ main .form-container {
     background-color: var(--form-background-color);
     padding: var(--form-padding);
     width: var(--form-width);
-}
-
-main .form {
-    background-color: var(--form-background-color);
 }
 
 main .form > div:not(:first-child) {
@@ -167,13 +163,13 @@ main .form select {
     padding: var(--form-input-padding);
     font-size: var(--form-input-font-size);
     max-width: unset;
-    margin-top: .5rem;
+    margin-top: .1rem;
     margin-bottom: 1rem;
     border-radius: 0.25rem;
 }
 
 main .form input:hover, main .form select:hover {
-    border-color: rgb(90 92 96);
+    border-color: var(--border-color);
 }
 
 main .form input:disabled{
@@ -251,6 +247,12 @@ main .form form .field-wrapper {
     margin: var(--form-field-gap);
     color: var(--form-label-color);
     grid-column: span 12;
+
+    button{
+        display: flex;
+        align-items: center;
+        justify-self: center;
+    }
 }
 
 main .form form p {
@@ -513,13 +515,14 @@ main .file-wrapper .file-description button::after{
 }
 
 main .form .button-wrapper button {
-    cursor:pointer
+    cursor:pointer;
+    border-radius: 60px;
+    transition: all 0.2s ease;
 }
 
 main .form .button-wrapper button:hover {
-    border: 3px solid var(#fff);
     color: #fff;
-    background-color: var(--button-secondary-color);
+    scale: 1.1;
 }
 
 main .form .button-wrapper button[disabled] {
@@ -767,10 +770,9 @@ main .form form .checkbox-group-wrapper.horizontal .field-description {
 }
 
 main div.form-wrapper {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgb(0 0 0 / 8%);
+    background: #f8f9fb;
+    padding: 30px 20px;
+    border: 1px solid #7e889a;
 }
 
 /* Responsive adjustments for mobile */
