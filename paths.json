@@ -1,7 +1,6 @@
 {
   "mappings": [
-    "/:/",
-    "/content/sas-forms/headers:/.helix/headers.json"
+    "/:/"
   ],
   "includes": [
     "/content/",
