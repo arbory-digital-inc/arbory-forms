@@ -410,7 +410,18 @@ async function initializeRuleEngineWorker(formDef, renderHTMLForm) {
     const form = ruleEngine.createFormInstance(formDefWithData, undefined, LOG_LEVEL);
     return renderHTMLForm(form.getState(true), data);
   }
-  const myWorker = new Worker(`${window.hlx.codeBasePath}/blocks/form/rules/RuleEngineWorker.js`, { type: 'module' });
+  const workerScriptUrl = `${window.hlx.codeBasePath}/blocks/form/rules/RuleEngineWorker.js`;
+  let myWorker;
+  try {
+    myWorker = new Worker(workerScriptUrl, { type: 'module' });
+  } catch (e) {
+    // Cross-origin Worker (e.g. Universal Editor authoring context) — use blob URL
+    const blob = new Blob(
+      [`import '${new URL(workerScriptUrl, window.location.origin).href}';`],
+      { type: 'text/javascript' },
+    );
+    myWorker = new Worker(URL.createObjectURL(blob), { type: 'module' });
+  }
   // Pass the current URL to the worker for log level determination
   const currentUrl = window.location.href;
   // Trigger the worker to start form initialization
