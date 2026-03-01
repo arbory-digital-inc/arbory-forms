@@ -1,23 +1,27 @@
-// eslint-disable-next-line import/no-import-module-exports
 import { expect } from '../../fixtures.js';
+import { ComponentUtils } from '../utils/componentUtils.js';
+import { CanvasUtils } from '../utils/canvasUtils.js';
 
-// eslint-disable-next-line import/prefer-default-export
 export class UniversalEditorBase {
   selectors = {
-    contentTreeLabel: '[aria-label="Content tree"]',
     ruleEditor: 'button[aria-label="Rule Editor"]',
     preview: '[aria-label="Preview"]',
+    contentTree: 'button[aria-label="Content tree"]',
+    dataSource: 'button[aria-label="Data Sources"]',
     mainInContentTree: 'li > [class*="content expandable collapsed"]',
-    adaptiveFormPathInUE: 'main[class="Canvas"] div[data-resource*="content/root/section_0/form"]',
-    componentPath: 'main[data-aue-type="container"] [data-aue-resource*="/',
-    adaptiveFormDropdown: 'li[data-resource*="content/root/section_0/form"] button[aria-label]',
+    adaptiveFormPathInUE: 'main button[data-resource$="content/root/section/form"]',
+    adaptiveFormDropdown: 'li[data-resource*="content/root/section/form"] button[aria-label]',
+    adaptiveFormInContentTree: 'li[data-resource*="content/root/section/form"] label[title="Adaptive Form"]',
+    componentPath: 'div[class="form block edit-mode"] [data-aue-resource*="/',
     componentSelectorValidation: 'li[data-resource*="/textinput"] [class="node-content selected"]',
     insertComponent: 'div[data-testid="right-rail-tools"] button[aria-haspopup]',
-    formPathInContentTree: 'li[data-resource*="/root/section_0/form"] p[class*="node-content"]',
-    formPathInUeSites: 'div[data-resource*="root/section_0/form"]',
-    sectionTwoPath: 'li[data-resource*="content/root/section_0"] div[class*="content expandable"]',
+    formPathInContentTree: 'li[data-resource*="/root/section/form"] p[class*="node-content"]',
+    formPathInUeSites: 'button[data-resource$="root/section/form"]',
+    sectionTwoPath: 'li[data-resource*="content/root/section"] div[class*="content expandable"]',
     defaultAndBlockMenu: 'div[role="presentation"][class*="Submenu-wrapper"]',
     adaptiveFormPathInBlockMenu: 'div[role="presentation"] div[data-key="blocks_form"]',
+    formReplace: 'button[aria-label="Forms Replace"]',
+    replaceFrameLocator: 'iframe[name="uix-guest-Forms"]',
     iFrame: 'iframe[name="Main Content"]',
     iFrameEditor: 'iframe[title="Editable app frame"]',
     iFrameInPreview: 'iframe[class="penpal"]',
@@ -27,66 +31,79 @@ export class UniversalEditorBase {
     deleteButton: 'button[aria-label="Delete"]',
     deleteConfirmationButton: '[data-variant="negative"][class*="aaz5ma_spectrum-ButtonGroup-Button"]',
     deletePopup: 'section[class*="spectrum-Dialog--destructive"]',
+    replaceTextLocator: 'div[role="presentation"] input[type="text"]'
   };
 
-  // eslint-disable-next-line class-methods-use-this
+  datasource  = {
+    expandAllButton : 'button[type="button"][aria-label="Expand All"]',
+    addButton : 'button[type="button"] span:has-text("Add")',
+    bindRef: 'label:has-text("Bind Reference")',
+    dataSourceFrame : 'iframe[name*="AEM Forms Datasource"]',
+    datasourceIFrame: 'div[id="datasource"] iframe[id*="datasource"]',
+    bindRefInput: 'div[id="datasource"] input[type="text"]',
+    bindRefSelectButton: 'button[type="button"][aria-label="Select Bindref from Tree"]',
+    selectButton : 'button[type="button"] span:has-text("Select")',
+  }
+
+  componentUtils = new ComponentUtils();
+  canvasUtils = new CanvasUtils();
+
   componentLocatorForPreview(componentName) {
     return `div[data-id*="${componentName}"]`;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   componentLocatorForUe(component) {
-    return `main[class="Canvas"] [data-resource*="/${component}"]`;
+    return `main [data-resource*="/${component}"]`;
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  componentSelectorValidation(component) {
-    return `li[data-resource*="/${component}"] [class*="node-content selected"]`;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
   async waitForCountToDecreaseByOne(adaptiveFormPath, initialCount) {
-    // eslint-disable-next-line no-await-in-loop
     while (await adaptiveFormPath.count() !== initialCount - 1) {
-      // eslint-disable-next-line no-await-in-loop
       await adaptiveFormPath.page().waitForTimeout(100);
     }
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  async verifyComponentInsert(frame, componentName, component) {
+  async verifyComponentInsert({frame, iframe, componentName, component}) {
+    await expect(frame.locator(this.selectors.insertComponent)).toBeVisible({ timeout: 10000 });
     await frame.locator(this.selectors.insertComponent).click();
-    await expect(frame.getByLabel('Adaptive Form Components')).toBeVisible();
-    expect(await frame.getByLabel('Adaptive Form Components').innerText()).toContain('Text Input');
-    await frame.getByLabel(componentName).click();
-    // eslint-disable-next-line max-len
+    await this.componentUtils.addComponent(frame, componentName);
     await expect(frame.locator(this.selectors.adaptiveFormDropdown)).toBeVisible({ timeout: 15000 });
-    await expect(frame.locator(`${this.selectors.componentPath + component}"]`)).toBeVisible({ timeout: 20000 });
-    await frame.locator(`${this.selectors.componentPath + component}"]`).click();
+    const componentPath = `${this.selectors.componentPath}${component}"]`;
+    await expect(iframe.locator(componentPath)).toBeVisible({ timeout: 20000 });
+    await iframe.locator(componentPath).click({ force: true });
     await expect(frame.locator(`li[data-resource*="${component}"]`)).toBeVisible({ timeout: 2000 });
   }
 
   async verifyComponentDelete(page, frame, component) {
-    let adaptiveFormPath = frame.locator(this.componentLocatorForUe(component));
-    let count = await adaptiveFormPath.count();
+    let componentPathInUE = frame.locator(this.componentLocatorForUe(component));
+    let count = await componentPathInUE.count();
     while (count > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      await adaptiveFormPath.first().click();
-      // eslint-disable-next-line no-await-in-loop
-      await frame.locator(this.componentSelectorValidation(component)).isVisible();
-      // eslint-disable-next-line no-await-in-loop
-      await frame.locator(this.selectors.deleteButton).click();
-      // eslint-disable-next-line no-await-in-loop
-      await expect(frame.locator(this.selectors.deletePopup)).toBeVisible();
-      // eslint-disable-next-line no-await-in-loop
-      await frame.locator(this.selectors.deleteConfirmationButton).last().click();
-      // eslint-disable-next-line no-await-in-loop
-      await this.waitForCountToDecreaseByOne(adaptiveFormPath, count);
-      // eslint-disable-next-line no-await-in-loop
-      adaptiveFormPath = await frame.locator(this.componentLocatorForUe(component));
-      // eslint-disable-next-line no-await-in-loop
-      count = await adaptiveFormPath.count();
+      await this.canvasUtils.isComponentPresent(frame, component, 2000);
+      await this.canvasUtils.selectComponent(frame, component);
+      await this.canvasUtils.isComponentSelected(frame, component, 2000);
+      await this.componentUtils.deleteComponent(frame);
+      await this.waitForCountToDecreaseByOne(componentPathInUE, count);
+      componentPathInUE = await frame.locator(this.componentLocatorForUe(component));
+      count = await componentPathInUE.count();
     }
-    await expect(adaptiveFormPath).toHaveCount(0);
+    await expect(componentPathInUE).toHaveCount(0);
+  }
+
+  // This function expands the tree nodes in the content tree to reach a specific field.
+  // Do not include leaf nodes (fields) in the path that do not have an expand/collapse button.
+  // Only intermediate nodes with expandable behavior should be part of the path.
+  async expandContentTreeField(page, frame,  path) {
+    await this.componentUtils.verifyAndClickContentTree(frame);
+    const nodeNames = path.split('/').filter(Boolean);
+    for (const nodeName of nodeNames) {
+      const expandButtonSelector = `li[data-resource$="${nodeName}"][class*="treenode"] button`;
+      const expandButton = frame.locator(expandButtonSelector).first();
+      await expect(expandButton).toBeVisible({ timeout: 5000 });
+
+      const ariaLabel = await expandButton.getAttribute('aria-label');
+      if (ariaLabel.includes('Expand Node')) {
+        await expandButton.click();
+        await expect(expandButton).toHaveAttribute('aria-label', 'Collapse Node');
+      }
+    }
   }
 }

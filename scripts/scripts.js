@@ -25,7 +25,7 @@ export function moveAttributes(from, to, attributes) {
   attributes.forEach((attr) => {
     const value = from.getAttribute(attr);
     if (value) {
-      to.setAttribute(attr, value);
+      to?.setAttribute(attr, value);
       from.removeAttribute(attr);
     }
   });
@@ -145,4 +145,3 @@ async function loadPage() {
 }
 
 loadPage();
- 
