@@ -1,6 +1,6 @@
 import { createOptimizedPicture, loadCSS } from '../../scripts/aem.js';
 import transferRepeatableDOM, { insertAddButton, insertRemoveButton } from './components/repeat/repeat.js';
-import { emailPattern, getSubmitBaseUrl, SUBMISSION_SERVICE } from './constant.js';
+import { emailPattern, getSubmitBaseUrl, setSubmitBaseUrl, SUBMISSION_SERVICE } from './constant.js';
 import GoogleReCaptcha from './integrations/recaptcha.js';
 import componentDecorator from './mappings.js';
 import { handleSubmit } from './submit.js';
@@ -461,6 +461,48 @@ export async function fetchForm(pathname) {
   return data;
 }
 
+let formsConfig = null;
+
+async function loadFormsConfig() {
+  if (formsConfig) return formsConfig;
+  try {
+    const resp = await fetch(`${window.hlx?.codeBasePath || ''}/tools/formsConfig.yaml`);
+    if (resp.ok) {
+      const text = await resp.text();
+      const config = {};
+      let currentSection = null;
+      text.split('\n').forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) return;
+        if (!line.startsWith(' ') && trimmed.endsWith(':')) {
+          currentSection = trimmed.slice(0, -1);
+          config[currentSection] = {};
+        } else if (currentSection && trimmed.includes(':')) {
+          const [key, ...rest] = trimmed.split(':');
+          config[currentSection][key.trim()] = rest.join(':').trim();
+        }
+      });
+      formsConfig = config;
+    }
+  } catch (e) {
+    console.warn('Unable to load formsConfig.yaml:', e);
+  }
+  return formsConfig;
+}
+
+function getSubmitBaseUrlFromConfig(config) {
+  const { hostname } = window.location;
+  const helixPattern = /^.+--.+--.+\.aem\.(page|live)$/;
+  if (helixPattern.test(hostname)) {
+    return config?.submitBaseUrl?.development || '';
+  }
+  if (hostname.endsWith('.arborydigital.com') || hostname === 'arborydigital.com') {
+    return config?.submitBaseUrl?.production || '';
+  }
+  // Fallback to development for any other domain (e.g. localhost)
+  return config?.submitBaseUrl?.development || '';
+}
+
 function addRequestContextToForm(formDef) {
   if (formDef && typeof formDef === 'object') {
     formDef.properties = formDef.properties || {};
@@ -521,6 +563,13 @@ export default async function decorate(block) {
   let rules = true;
   let form;
   if (formDef) {
+    // Set the submit base URL from config if not already set
+    if (!getSubmitBaseUrl()) {
+      const config = await loadFormsConfig();
+      if (config) {
+        setSubmitBaseUrl(getSubmitBaseUrlFromConfig(config));
+      }
+    }
     const submitProps = formDef?.properties?.['fd:submit'];
     const actionType = submitProps?.actionName || formDef?.properties?.actionType;
     const spreadsheetUrl = submitProps?.spreadsheet?.spreadsheetUrl
